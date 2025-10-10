@@ -1,4 +1,4 @@
-# Text-to-Speech Chrome Extension with Summary Feature
+# AIME Supporter Chrome Extension with Summary Feature
 
 ## What is This?
 
