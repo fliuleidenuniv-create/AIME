@@ -1,2 +1,0 @@
-# AIME
-Google chrome extension
