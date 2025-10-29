@@ -1,20 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Read Aloud</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <script src="popup.js"></script>
   <script src="config.js"></script>
-  <link rel="stylesheet" type="text/css" href="popup.css">
+  <title>AIME</title>
+  <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <div class="action-container">
-    <button id="readAloudButton">Read Aloud</button>
-    <button id="summaryButton">Summarize</button>
+  <div id="aime-popup">
+    <!-- Message card goes on top -->
+    <div id="summaryContainer">
+      <strong>AIME is here to support you &#128588 </strong>
+    </div>
+
+    <!-- Action buttons below -->
+    <div class="action-container">
+      <button id="readAloudButton" class="button">Read This</button>
+      <button id="summaryButton" class="button">Topic Recap</button>
+    </div>
+
+    <!-- Loader and summary output elements -->
+    <div id="loader" style="display:none;">Loading...</div>
+    <div id="summaryText" style="display:none;"></div>
   </div>
-  <div id="summaryContainer">
-    <div id="loader" class="loader" style="display:none;"></div>
-    <div id="summaryText">Your summary will appear here.</div>
-  </div>
-  
 </body>
 </html>

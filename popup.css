@@ -1,53 +1,132 @@
-.loader {
-    border: 6px solid #f3f3f3; /* Light grey */
-    border-top: 6px solid #3498db; /* Blue */
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 2s linear infinite;
-    margin: auto;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+/* ===========================
+   AIME Extension – Popup Styles
+   Wider panel + pill buttons
+   =========================== */
 
-  
-  #summaryText {
-    font-family: 'Arial', sans-serif; /* Use a web-safe font or import a custom one */
-    font-size: 16px; /* Adjust the size as needed */
-    color: #333; /* Dark gray text color for readability */
-    background-color: #f9f9f9; /* Light background to contrast the text */
-    border-radius: 8px; /* Rounded corners */
-    padding: 15px; /* Padding inside the container */
-    margin-top: 10px; /* Space above the container */
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
-    line-height: 1.5; /* Spacing between lines of text */
-    overflow-wrap: break-word; /* Prevents long words from overflowing */
-  }
-  .action-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-  }
-  
-  #readAloudButton {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 10px;
-  }
+/* ---- Theme tokens ---- */
+:root {
+  --aime-red: #FF504D;         /* base */
+  --aime-red-hover: #FF5A53;   /* hover */
+  --aime-red-pressed: #FE4848; /* active */
+  --aime-on-red: #FFFFFF;
 
-  #summaryButton {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  --aime-bg: #F8F9FA;          /* page bg */
+  --aime-surface: #FFFFFF;     /* cards */
+  --aime-border: #E9EAEB;      /* subtle borders */
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.06);
+  --shadow-md: 0 2px 8px rgba(16,24,40,.08);
+
+  --radius-btn: 9999px;        /* pill buttons */
+  --radius-card: 12px;         /* normal cards */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+/* Make the popup wider */
+html, body {
+  width: 180px;                /* <- adjust to taste (e.g., 440px) */
+  max-width: 480px;
+  background: var(--aime-bg);
+  color: #111;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Outer wrapper for consistent padding */
+#aime-popup{
+  padding: 16px;
+}
+
+/* ---- Message card on top ---- */
+#summaryContainer{
+  margin: 0 0 16px 0;          /* on top of buttons */
+  background: var(--aime-surface);
+  border: 1px solid var(--aime-border);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  font-size: 15px;
+  color: #1F2937;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Vertical button list by default ---- */
+.action-container{
+  display: flex;
+  flex-direction: column;      /* vertical stack */
+  gap: 12px;
+}
+
+/* ---- Pill Button base ---- */
+.button{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 56px;            /* a bit taller for readability */
+  padding: 14px 20px;
+
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: .2px;
+  text-align: center;
+
+  color: var(--aime-on-red);
+  background-color: var(--aime-red);
+  border: none;
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+
+  box-shadow: var(--shadow-sm), var(--shadow-md);
+  transition: background-color .15s ease, transform .03s ease, box-shadow .15s ease;
+
+  white-space: normal;         /* clean wrap if needed */
+  word-break: keep-all;
+}
+
+.button:hover    { background-color: var(--aime-red-hover); }
+.button:active   { background-color: var(--aime-red-pressed); transform: translateY(1px); }
+.button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+/* Accessible keyboard focus */
+.button:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 2px #FFF,
+    0 0 0 4px #FFAEA9,
+    var(--shadow-sm);
+}
+
+/* ---- Responsive: if popup is extra wide, you may switch to two columns.
+   Comment out this section if you always want a vertical stack. ---- */
+@media (min-width: 460px){
+  .action-container{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
+}
+#summaryText {
+  text-align: center;
+  white-space: pre-line;
+  margin-top: 20px;
+}
+#summaryText {
+  text-align: left;
+  white-space: pre-line;
+  margin: 20px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+
+#summaryText strong {
+  font-weight: bold;
+}

@@ -1,29 +1,31 @@
 {
-    "manifest_version": 3,
-    "name": "Read Aloud",
-    "version": "1.0",
-    "description": "A Chrome extension that reads aloud the text content of any webpage using Google Cloud Text-to-Speech API.",
+  "manifest_version": 3,
+  "name": "AIME Helper",
+  "version": "1.0",
+  "description": "A Chrome extension that reads aloud the text content of any webpage using Google Cloud Text-to-Speech API.",
     "permissions": [
       "activeTab",
-      "tabs", 
+      "tabs",
+      "scripting",   
+      "<all_urls>",
       "storage"
     ],
-    "action": {
-      "default_popup": "popup.html",
-      "default_icon": {
-        "16": "images/icon16.png",
-        "64": "images/icon64.png",
-        "128": "images/icon128.png"
-      }
-    },
-    "icons": {
-      "16": "images/icon16.png",
-      "64": "images/icon64.png",
-      "128": "images/icon128.png"
-    },
-    "background": {
-      "service_worker": "background.js"
-    },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/aime_icon_16.png",
+      "48": "images/aime_icon_48.png",
+      "128": "images/aime_icon_128.png"
+    }
+  },
+  "icons": {
+    "16": "images/aime_icon_16.png",
+    "48": "images/aime_icon_48.png",
+    "128": "images/aime_icon_128.png"
+  },
     "content_scripts": [
         {
           "resources": ["config.js"],
@@ -31,5 +33,4 @@
           "js": ["content.js"]
         }
       ]
-  }
-  
+}

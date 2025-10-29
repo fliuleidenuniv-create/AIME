@@ -1,3 +1,52 @@
+let recognitionActive = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    if ('webkitSpeechRecognition' in window) {
+        const recognition = new webkitSpeechRecognition();
+
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        const recordButton = document.getElementById('recordSpeechButton');
+        if (recordButton) {
+            recordButton.addEventListener('click', function() {
+                if (!recognitionActive) {
+                    recognition.start();
+                    recognitionActive = true;
+                }
+            });
+        } else {
+            console.error('Record Speech Button not found!');
+        }
+
+        recognition.onstart = function() {
+            console.log('Speech recognition started');
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            console.log('Transcript:', transcript);
+            // Process the transcript as needed
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            recognitionActive = false; // Reset on error
+        };
+
+        recognition.onend = function() {
+            console.log('Speech recognition ended');
+            recognitionActive = false; // Reset after end
+        };
+    } else {
+        console.error('Web Speech API is not supported in this browser');
+    }
+});
+
+// Global variable to hold the current audio object
+let currentAudio = null;
+
 // popup.js
 
 // create a event listner for read aloud button
@@ -6,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if(button) {
       button.addEventListener('click', function() {
         chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: 'getSelectedText' });
+          sendToContent(tabs[0].id, { action: 'getSelectedText' });
         });
       });
   } else {
@@ -21,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     summaryButton.addEventListener('click', function() {
       // Send message to content script to get selected text and URL
       chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'getSelectedTextAndURL' });
+        sendToContent(tabs[0].id, { action: 'getSelectedTextAndURL' });
       });
     });
   } else {
@@ -29,6 +78,41 @@ document.addEventListener('DOMContentLoaded', function() {
   } 
 });
 
+// Helper: send a message to the content script, and if there's no receiver,
+// inject `content.js` into the tab (once) and retry the message.
+function sendToContent(tabId, message, triedInject = false) {
+  chrome.tabs.sendMessage(tabId, message, function(response) {
+    if (chrome.runtime.lastError) {
+      console.warn(`sendMessage error: ${chrome.runtime.lastError.message}`);
+
+      // Enhanced logging
+      console.warn(`Failed to send message: "${message.action}". ${chrome.runtime.lastError.message}`);
+
+      // Attempt an injection if the message is not received
+      if (!triedInject) {
+        console.log('Attempting to inject content script...');
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['content.js']
+        }, function() {
+          console.log('Content script injected successfully, retrying message send...');
+          // Retry sending the message after injection
+          sendToContent(tabId, message, true);
+        });
+      } else {
+        console.error('No receiver for message after injection attempt.');
+      }
+    } else {
+      // Log successful message response for tracking
+      console.log('Message sent successfully, response:', response);
+
+      // Check if response is undefined or empty for better issue tracking
+      if (!response) {
+        console.warn('Received empty or undefined response');
+      }
+    }
+  });
+}
 // Listen for response from content script with selected text and call Google Cloud Text-to-Speech API
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'selectedText') {
@@ -48,16 +132,27 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     })
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to synthesize speech');
+        return response.json().then(errData => {
+          console.error('API Error Details:', JSON.stringify(errData, null, 2));
+          throw new Error('Failed to synthesize speech');
+        });
       }
       return response.json();
     })
     .then(data => {
-      // Play the synthesized audio
-      var audio = new Audio('data:audio/mp3;base64,' + data.audioContent);
-      audio.play();
+      if (data.audioContent) {
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        }
+
+        currentAudio = new Audio('data:audio/mp3;base64,' + data.audioContent);
+        currentAudio.play();
+      } else {
+        console.error('Audio content not found in response', data);
+      }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => console.error('Error during Text-to-Speech request:', error));
   }
 });
 
@@ -68,8 +163,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 
     // window.prompt to get user input into a variable
-    const openAIKey = CONFIG.OPENAI_API_KEY;
-    const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
     var textToSummarize = request.selectedText;
     var pageURL = request.url;
 
@@ -77,56 +170,38 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     document.getElementById('loader').style.display = 'block';
     document.getElementById('summaryText').style.display = 'none';
 
-    const requestBody = {
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          "role": "system",
-          "content": `You are a helpful assistant that summerizes a given text to 30-80% of its length. 
-                      You will not use the same exact sentences as mentioned in the text. 
-                      You will only provide a gist of what is mentioned in the text. 
-                      You will not use any additional information. 
-                      You will use the text to summerize. 
-                      If they have a list of things then use bullet points to summerize. 
-                      You will keep the context of the page used to grab the text from.`
-        },
-        {
-          "role": "user",
-          "content": `Given the following text from a webpage and the URL of the page, 
-                      summarize the text in a way that includes relevant context from the content available at the URL. 
-                      Text: '${textToSummarize}'. URL: '${pageURL}'. Please provide a concise summary that integrates 
-                      the key points from both the text and any relevant information from the URL.`
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 150,
-      top_p: 1.0,
-      frequency_penalty: 0.0,
-      presence_penalty: 0.0
-    };
-  
-    fetch(apiEndpoint, {
+    fetch('https://language.googleapis.com/v1/documents:analyzeEntities?key=' + CONFIG.GOOGLE_API_KEY, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAIKey}`,
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        document: {
+          type: 'PLAIN_TEXT',
+          content: textToSummarize,
+        },
+        encodingType: 'UTF8',
+      }),
     })
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to summerize selected Text', response.status, response.body);
+        throw new Error('Failed to analyze text', response.status, response.body);
       }
       return response.json();
     })
     .then(data => {
-      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-        const summaryText = data.choices[0].message.content.trim();
+      const entities = data.entities || [];
+      const mainEntities = entities.slice(0, 10).map(entity => `#${entity.name}`).join(' ');
 
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('summaryText').style.display = 'block';
-        document.getElementById('summaryText').textContent = summaryText;
-      }
+      const sentiment = data.documentSentiment || { score: 0 };
+      const sentimentSummary = `Sentiment: ${sentiment.score > 0 ? 'Positive' : sentiment.score < 0 ? 'Negative' : 'Neutral'}`;
+
+      let summary = `Topics: ${mainEntities}. ${sentimentSummary}. Conclusion: Highlighted key topics and overall sentiment.`;
+      summary = (summary.length > 200) ? summary.slice(0, 197) + '...' : summary;
+
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('summaryText').style.display = 'block';
+      document.getElementById('summaryText').innerHTML = summary;
     })
     .catch(error => console.error('Error:', error));
   }

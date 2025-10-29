@@ -6,8 +6,7 @@
 
 // Default placeholder config used if you don't have a local config file.
 const CONFIG = {
-  GOOGLE_API_KEY: 'YOUR_GOOGLE_API_KEY_HERE',
-  OPENAI_API_KEY: 'YOUR_OPENAI_API_KEY_HERE'
+  GOOGLE_API_KEY: '' // Place your real Google API key here
 };
 
 // If you create a `config.local.js`, it should overwrite these values. Example:
